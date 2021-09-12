@@ -5,8 +5,6 @@ import pandas as pd
 import datetime as dt
 from webdriver_manager.chrome import ChromeDriverManager
 
-
-
 def scrape_all():
     # Initiate headless driver for deployment
     executable_path = {'executable_path': ChromeDriverManager().install()}
@@ -59,7 +57,7 @@ def mars_news(browser):
 
 def featured_image(browser):
     # Visit URL
-    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    url = 'https://data-class-jpl-space.s3.amazonaws.com/JPL_Space/index.html'
     browser.visit(url)
 
     # Find and click the full image button
@@ -87,18 +85,35 @@ def mars_facts():
     # Add try/except for error handling
     try:
         # Use 'read_html' to scrape the facts table into a dataframe
-        df = pd.read_html('https://data-class-mars-facts.s3.amazonaws.com/Mars_Facts/index.html')[0]
+        df = pd.read_html('https://space-facts.com/mars/')[0]
 
     except BaseException:
         return None
 
     # Assign columns and set index of dataframe
-    df.columns=['Description', 'Mars', 'Earth']
+    df.columns=['Description', 'Mars','Earth']
     df.set_index('Description', inplace=True)
 
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
 
+def scrape_hemisphere(html_text):
+    # Parse the resulting html with soup
+    #html = browser.html
+    hem_image_soup = soup(html_text, "html.parser")
+   
+    try:
+        title = hem_image_soup.find("h2", class_="title").get_text()
+        img_url = hem_image_soup.find("a", text="Sample").get("href")
+    except AttributeError :
+        title = None
+        img_url = None    
+    hemispheres = {
+        "img_url": img_url,
+        "title": title
+        
+    }
+    return hemispheres
 
 def hemispheres(browser):
     # 1. Use browser to visit the URL 
@@ -111,29 +126,13 @@ def hemispheres(browser):
     # 3. Write code to retrieve the image urls and titles for each hemisphere.
     for i in range(4):
         browser.find_by_css('a.product-item h3')[i].click()
-        hemisphere_item = hemisphere_soup(browser.html)
+        hemisphere_item = scrape_hemisphere(browser.html)
         hemisphere_image_urls.append(hemisphere_item)
         browser.back()
     return hemisphere_image_urls
 
-
-def hemisphere_soup(html_text):
-    # Parse the resulting html with soup
-    html = browser.html
-    image_soup = soup(html, "html.parser")
-   
-    try:
-        title = image_soup.find("h2", class_="title").get_text()
-        img_url = image_soup.find("a", text="Sample").get("href")
-    except AttributeError :
-        title = None
-        img_url = None    
-    hemispheres = {
-        "title": title,
-        "img_url": img_url
-    }
-    return hemispheres
-
 if __name__ == "__main__":
-    # if running as script, print scraped data
+
+    #if running as script, print scraped data
     print(scrape_all())
+   
